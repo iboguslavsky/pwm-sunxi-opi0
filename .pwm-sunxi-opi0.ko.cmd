@@ -1,1 +1,0 @@
-cmd_/root/kernel/pwm-sunxi-opi0.ko := ld -EL -r  -T /usr/src/linux-headers-3.4.113-sun8i/scripts/module-common.lds --build-id  -o /root/kernel/pwm-sunxi-opi0.ko /root/kernel/pwm-sunxi-opi0.o /root/kernel/pwm-sunxi-opi0.mod.o
