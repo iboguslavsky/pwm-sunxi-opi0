@@ -15,6 +15,7 @@ Once loaded, the following sysfs structure is created:
                +---prescale
                +---entire_cycles
                +---active_cycles
+               +---freqperiod
                +---polarity
 	</pre>
 
