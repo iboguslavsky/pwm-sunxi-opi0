@@ -52,13 +52,13 @@ Once loaded, the following sysfs structure is created:
   PRESCALE_DIV_NO  = 0x0f
   <pre>
   
-* entire_cycles (r/w)
+  * entire_cycles (r/w)
   
   Allowed values 0..65534
   
   Specify number of ticks in a complete PWM cycle
   
-* active_cycles (r/w)
+    * active_cycles (r/w)
   
   Allowed values 1..65535
   
