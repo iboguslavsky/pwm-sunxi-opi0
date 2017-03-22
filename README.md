@@ -26,6 +26,7 @@ Once loaded, the following sysfs directory structure is created:
 </pre>
 
 **PWM cadence**
+[PWM]: https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/pwm.png "PWM Cadence Diagram"
 
   * **run** (read / write)
   
