@@ -25,7 +25,8 @@ Once loaded, the following sysfs directory structure is created:
 	         └── freqperiod
 </pre>
 
-	
+**PWM cadence**
+
   * **run** (read / write)
   
     Enable / disable PWM0
