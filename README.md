@@ -20,7 +20,7 @@ Once loaded, the following sysfs structure is created:
 	</pre>
 
 	
-  Only supports PWM0. It's exposed via PA6, which is an Rx pin in the UART header (middle pin).
+---
   
   * **run** (read / write)
   
