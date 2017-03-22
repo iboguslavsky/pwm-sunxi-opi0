@@ -63,7 +63,7 @@ Once loaded, the following sysfs structure is created:
       Specify number of ticks in a complete PWM cycle
   ---
   
-   * active_cycles (r/w)
+   * active_cycles (read / write)
    
       **Allowed values 0..65535**
   
