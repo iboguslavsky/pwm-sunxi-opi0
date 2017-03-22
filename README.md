@@ -34,7 +34,7 @@ Once loaded, the following sysfs structure is created:
  
   * **prescale** (read / write)
   
-  Divide 24MHz PWM clock by a specified prescaler 
+    Divide 24MHz PWM clock by a specified prescaler 
   
   *Allowed Values: hex value from thetable below*
   <pre>
@@ -63,8 +63,6 @@ Once loaded, the following sysfs structure is created:
     
     *Allowed values 0..65534*
   
-      
-  ---
   
    * **active_cycles** (read / write)
      
@@ -72,14 +70,14 @@ Once loaded, the following sysfs structure is created:
      
      *Allowed values 0..65535*
   
-  ---
+ 
   * **polarity** (read / write)
   
     Specify polarity of the duty cycle (positive / negative)
     
     *Allowed values: 0, 1*
       
-  ---
+  
   * **freqperiod** (read only)
     
     Show a calculated frequency of the PWM cycle (accounting for PWM clock divider and specified PWM period)
