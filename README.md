@@ -4,7 +4,7 @@ Loadable Kernel Module to support PWM on Allwinner H3 / H2+ SoC (sun8i / sun8iw7
 
 **Tested under Legacy Kernel only (3.4.X)**
 
-Provides access to PWM configuration parameters from userspace. Only exposes PWM0 (PWM1 will be added once H2+ SoC documentation is available). PWM0 is on PA5, which is exposed as UART0_RX (middle pin on the UART header). Remap in FEX.
+Provides access to PWM configuration parameters from userspace. Only exposes PWM0 (PWM1 will be added once H2+ SoC documentation is available). PWM0 output is on PA5, which is exposed as UART0_RX (middle pin on the UART header). Remap in FEX.
 
 Once loaded, the following sysfs directory structure is created:
 
@@ -47,7 +47,7 @@ Once loaded, the following sysfs directory structure is created:
     *Allowed Values: hex value from the table below*
     
     <pre>
-    PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
+    PRESCALE_DIV120  = 0x00, // Divide 24mhz clock by 120; cycle = 5us  1 / (24Mhz / 120) 
     PRESCALE_DIV180  = 0x01,
     PRESCALE_DIV240  = 0x02,
     PRESCALE_DIV360  = 0x03,
