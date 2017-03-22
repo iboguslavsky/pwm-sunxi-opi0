@@ -60,14 +60,14 @@ Once loaded, the following sysfs structure is created:
   
       **Allowed values 0..65534**
   
-      Specify number of ticks in a complete PWM cycle
+      Specify number of ticks in a complete PWM period
   ---
   
    * active_cycles (read / write)
    
       **Allowed values 0..65535**
   
-      Specify number of active ticks in a PWM cycle
+      Specify number of active ticks in a PWM period
   
   ---
   * freqperiod (read only)
