@@ -24,8 +24,8 @@ Once loaded, the following sysfs directory structure is created:
 	         ├── polarity
 	         └── freqperiod
 </pre>
-
-**PWM cadence**
+---
+**PWM cadence diagram**
 ![PWM Cadence](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/pwm.png "PWM Cadence Diagram")
 
   * **run** (read / write)
