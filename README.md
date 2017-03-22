@@ -29,7 +29,7 @@ Once loaded, the following sysfs structure is created:
     To enable / disable PWM0:
   <pre>
   echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
-  echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run`
+  echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run
   </pre>
   
   ---
