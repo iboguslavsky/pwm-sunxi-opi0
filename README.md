@@ -22,7 +22,7 @@ Once loaded, the following sysfs directory structure is created:
 		              +--- entire_cycles
 		              +--- active_cycles
 		              +--- polarity
-		              +--- freqperiod
+		              └--- freqperiod
 </pre>
 
 	
