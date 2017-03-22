@@ -15,26 +15,30 @@ Once loaded, the following sysfs structure is created:
                +---prescale
                +---entire_cycles
                +---active_cycles
-               +---freqperiod
                +---polarity
+               +---freqperiod
 	</pre>
 
 	
   Only supports PWM0. It's exposed via PA6, which is an Rx pin in the UART header (middle pin).
   
-  * run (read / write)
+  * **run** (read / write)
   
-    **Allowed values: 0, 1**
+    Enable / disable PWM0.
+    
+    *Allowed values: 0, 1*
 	
-    To enable / disable PWM0:
+  
   <pre>
   echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
   echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run
   </pre>
   ---
-  * prescale (read / write)
+  * **prescale** (read / write)
   
-  Divide 24MHz PWM clock by a specified prescaler (in hex, see table below)
+  Divide 24MHz PWM clock by a specified prescaler 
+  
+  *Allowed Values: hex value from thetable below*
   <pre>
   PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
   PRESCALE_DIV180  = 0x01,
@@ -55,28 +59,31 @@ Once loaded, the following sysfs structure is created:
   </pre>
   
   ---
-  * entire_cycles (read / write)
+  * **entire_cycles** (read / write)
+    
+    Specify number of ticks in a complete PWM period
+    
+    *Allowed values 0..65534*
   
-      **Allowed values 0..65534**
-  
-      Specify number of ticks in a complete PWM period
+      
   ---
   
-   * active_cycles (read / write)
-   
-      **Allowed values 0..65535**
-  
-      Specify number of active ticks in a PWM period
+   * **active_cycles** (read / write)
+     
+     Specify number of active ticks in a PWM period  
+     
+     *Allowed values 0..65535*
   
   ---
-  * freqperiod (read only)
+  * **polarity** (read / write)
+  
+    Specify polarity of the duty cycle (positive / negative)
+    
+    *Allowed values: 0, 1*
+      
+  ---
+  * **freqperiod** (read only)
     
     Show a calculated frequency of the PWM cycle (accounting for PWM clock divider and specified PWM period)
     
-  ---
-  * polarity (read / write)
-      
-      **Allowed values: 0, 1**
-      
-      Specify polarity of the duty cycle (positive / negative)
       
