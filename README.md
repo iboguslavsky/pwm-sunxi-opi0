@@ -27,10 +27,10 @@ Once loaded, the following sysfs structure is created:
     *Allowed values: 0, 1*
 	
   
-  <pre>
-  echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
-  echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run
-  </pre>
+    <pre>
+    echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
+    echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run
+    </pre>
  
   * **prescale** (read / write)
   
