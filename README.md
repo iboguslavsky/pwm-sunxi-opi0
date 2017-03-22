@@ -14,15 +14,15 @@ Once loaded, the following sysfs directory structure is created:
   └─ /class 
        │
        └─ /pwm-sunxi-opi0
-	   │
-	   └─ /pwm0
-	       │
-	       ├── run
-	       ├── prescale
-	       ├── entire_cycles
-	       ├── active_cycles
-	       ├── polarity
-	       └── freqperiod
+	    │
+	    └─ /pwm0
+	         │
+	         ├── run
+	         ├── prescale
+	         ├── entire_cycles
+	         ├── active_cycles
+	         ├── polarity
+	         └── freqperiod
 </pre>
 
 	
