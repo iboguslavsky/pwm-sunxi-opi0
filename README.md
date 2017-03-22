@@ -42,20 +42,20 @@ Once loaded, the following sysfs structure is created:
     PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
     PRESCALE_DIV180  = 0x01,
     PRESCALE_DIV240  = 0x02,
-  PRESCALE_DIV360  = 0x03,
-  PRESCALE_DIV480  = 0x04,
-  PRESCALE_INVx05  = 0x05, // Invalid prescaler setting
-  PRESCALE_INVx06  = 0x06,
-  PRESCALE_INVx07  = 0x07,
-  PRESCALE_DIV12k  = 0x08,
-  PRESCALE_DIV24k  = 0x09,
-  PRESCALE_DIV36k  = 0x0a,
-  PRESCALE_DIV48k  = 0x0b,
-  PRESCALE_DIV72k  = 0x0c,
-  PRESCALE_INVx0d  = 0x0d,
-  PRESCALE_INVx0e  = 0x0e,
-  PRESCALE_DIV_NO  = 0x0f
-  </pre>
+    PRESCALE_DIV360  = 0x03,
+    PRESCALE_DIV480  = 0x04,
+    PRESCALE_INVx05  = 0x05, // Invalid prescaler setting
+    PRESCALE_INVx06  = 0x06,
+    PRESCALE_INVx07  = 0x07,
+    PRESCALE_DIV12k  = 0x08,
+    PRESCALE_DIV24k  = 0x09,
+    PRESCALE_DIV36k  = 0x0a,
+    PRESCALE_DIV48k  = 0x0b,
+    PRESCALE_DIV72k  = 0x0c,
+    PRESCALE_INVx0d  = 0x0d,
+    PRESCALE_INVx0e  = 0x0e,
+    PRESCALE_DIV_NO  = 0x0f
+    </pre>
   
   
   * **entire_cycles** (read / write)
