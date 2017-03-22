@@ -22,17 +22,19 @@ Once loaded, the following sysfs structure is created:
 	
   Only supports PWM0. It's exposed via PA6, which is an Rx pin in the UART header (middle pin).
   
-  * run (r/w)
+  * run (read / write)
   
+        **Allowed values: 0, 1**
+	
   To enable / disable PWM0:
   <pre>
   echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
   echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run`
   </pre>
   
-  * prescale (r/w)
+  * prescale (read / write)
   
-  Divide PWM clock by a specified prescaler (in hex, see table below)
+  Divide 24MHz PWM clock by a specified prescaler (in hex, see table below)
   <pre>
   PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
   PRESCALE_DIV180  = 0x01,
@@ -50,16 +52,27 @@ Once loaded, the following sysfs structure is created:
   PRESCALE_INVx0d  = 0x0d,
   PRESCALE_INVx0e  = 0x0e,
   PRESCALE_DIV_NO  = 0x0f
-  <pre>
+  </pre>
   
-  * entire_cycles (r/w)
+  * entire_cycles (read / write)
   
-  Allowed values 0..65534
+      **Allowed values 0..65534**
   
-  Specify number of ticks in a complete PWM cycle
+      Specify number of ticks in a complete PWM cycle
   
-    * active_cycles (r/w)
+   * active_cycles (r/w)
+   
+      **Allowed values 0..65535**
   
-  Allowed values 1..65535
+      Specify number of active ticks in a PWM cycle
   
-  Specify number of active ticks in a PWM cycle
+  * freqperiod (read only)
+    
+    Show a calculated frequency of the PWM cycle (accounting for PWM clock frequency and period)
+    
+  * polarity (read / write)
+      
+      **Allowed values: 0, 1**
+      
+      Specify polarity of the duty cycle (positive / negative)
+      
