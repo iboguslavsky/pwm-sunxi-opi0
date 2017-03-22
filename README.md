@@ -20,8 +20,6 @@ Once loaded, the following sysfs structure is created:
 	</pre>
 
 	
----
-  
   * **run** (read / write)
   
     Enable / disable PWM0.
@@ -33,7 +31,7 @@ Once loaded, the following sysfs structure is created:
   echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
   echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run
   </pre>
-  ---
+ 
   * **prescale** (read / write)
   
   Divide 24MHz PWM clock by a specified prescaler 
@@ -58,7 +56,7 @@ Once loaded, the following sysfs structure is created:
   PRESCALE_DIV_NO  = 0x0f
   </pre>
   
-  ---
+  
   * **entire_cycles** (read / write)
     
     Specify number of ticks in a complete PWM period
