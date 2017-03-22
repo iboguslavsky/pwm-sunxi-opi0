@@ -22,7 +22,7 @@ Once loaded, the following sysfs structure is created:
 	
   * **run** (read / write)
   
-    Enable / disable PWM0.
+    Enable / disable PWM0
     
     *Allowed values: 0, 1*
 	
