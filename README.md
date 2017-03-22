@@ -10,19 +10,19 @@ Once loaded, the following sysfs directory structure is created:
 
 <pre>
 /sys
-  │
-  └──── /class 
-          │
-          └──── /pwm-sunxi-opi0
-	              │
-	              └──── /pwm0
-		      	      │
-		      	      ├──── run
-		              ├──── prescale
-		              ├──── entire_cycles
-		              ├──── active_cycles
-		              ├──── polarity
-		              └──── freqperiod
+ │
+ └─ /class 
+     │
+     └─ /pwm-sunxi-opi0
+	 │
+	 └─ /pwm0
+	     │
+	     ├── run
+	     ├── prescale
+	     ├── entire_cycles
+	     ├── active_cycles
+	     ├── polarity
+	     └── freqperiod
 </pre>
 
 	
