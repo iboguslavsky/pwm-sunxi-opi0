@@ -74,7 +74,7 @@ Once loaded, the following sysfs structure is created:
     
     Show a calculated frequency of the PWM cycle (accounting for PWM clock frequency and period)
     
-    ---
+  ---
   * polarity (read / write)
       
       **Allowed values: 0, 1**
