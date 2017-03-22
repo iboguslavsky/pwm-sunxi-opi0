@@ -47,7 +47,7 @@ Once loaded, the following sysfs directory structure is created:
     *Allowed Values: hex value from the table below*
     
     <pre>
-    PRESCALE_DIV120  = 0x00, // Divide 24mhz clock by 120; cycle = 5us  1 / (24Mhz / 120) 
+    PRESCALE_DIV120  = 0x00, // Divide 24mhz clock by 120; cycle = 5us  **1 / (24Mhz / 120)**
     PRESCALE_DIV180  = 0x01,
     PRESCALE_DIV240  = 0x02,
     PRESCALE_DIV360  = 0x03,
