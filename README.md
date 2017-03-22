@@ -24,14 +24,15 @@ Once loaded, the following sysfs structure is created:
   
   * run (read / write)
   
-        **Allowed values: 0, 1**
+    **Allowed values: 0, 1**
 	
-  To enable / disable PWM0:
+    To enable / disable PWM0:
   <pre>
   echo 1 > /sys/class/pwm-sunxi-opi0/pwm0/run
   echo 0 > /sys/class/pwm-sunxi-opi0/pwm0/run`
   </pre>
   
+  ---
   * prescale (read / write)
   
   Divide 24MHz PWM clock by a specified prescaler (in hex, see table below)
@@ -54,11 +55,13 @@ Once loaded, the following sysfs structure is created:
   PRESCALE_DIV_NO  = 0x0f
   </pre>
   
+  ---
   * entire_cycles (read / write)
   
       **Allowed values 0..65534**
   
       Specify number of ticks in a complete PWM cycle
+  ---
   
    * active_cycles (r/w)
    
@@ -66,10 +69,12 @@ Once loaded, the following sysfs structure is created:
   
       Specify number of active ticks in a PWM cycle
   
+  ---
   * freqperiod (read only)
     
     Show a calculated frequency of the PWM cycle (accounting for PWM clock frequency and period)
     
+    ---
   * polarity (read / write)
       
       **Allowed values: 0, 1**
