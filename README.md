@@ -10,8 +10,8 @@ Once loaded, the following sysfs directory structure is created:
 
 <pre>
 /sys
-  |
-  +---- /class 
+  │
+  └──── /class 
           |
           +---- /pwm-sunxi-opi0
 	              |
