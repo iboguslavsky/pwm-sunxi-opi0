@@ -34,7 +34,7 @@ After the board comes back up:
 > git clone https://github.com/iboguslavsky/pwm-sunxi-opi0.git
 > cd pwm-sunxi-opi0
 > make
-> insmod pwm-sunxi-opi0.ko
+> insmod ./pwm-sunxi-opi0.ko
 </pre>
 
 Once loaded, the following sysfs directory structure will be created:
