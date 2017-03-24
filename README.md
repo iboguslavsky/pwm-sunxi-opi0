@@ -17,7 +17,7 @@ uart_debug_port = 0
 uart_debug_tx = port:PA04<2><1><default><default>
 uart_debug_rx = port:PA05<2><1><default><default>
 
-; Enable PWM0 on OA05
+; Enable PWM0 on PA05
 [pwm0_para]
 pwm_used = 1
 pwm_positive = port:PA05<3><0><default><default>
@@ -26,9 +26,11 @@ pwm_positive = port:PA05<3><0><default><default>
 <pre>
 > fex2bin orangepizero.fex orangepizero.bin
 > shutdown -r now
+</pre>
 
 After the board comes back up:
 
+<pre>
 > git clone https://github.com/iboguslavsky/pwm-sunxi-opi0.git
 > cd pwm-sunxi-opi0
 > make
