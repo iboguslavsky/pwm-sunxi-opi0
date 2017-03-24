@@ -271,7 +271,7 @@ static ssize_t pwm_run_store (struct device *dev, struct device_attribute *attr,
 	// Good status to return (the input is the string size of *buf in bytes)
         status = size;
 
-        printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
+        // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
     }
   }
 
@@ -332,7 +332,7 @@ struct pwm_channel *channel = dev_get_drvdata (dev);
 
     iowrite32 (channel -> cycles.initializer, channel -> period_reg_addr);
 
-    printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
+    // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
 
     return size;
   }
@@ -351,7 +351,7 @@ struct pwm_channel *channel = dev_get_drvdata (dev);
     channel -> cycles.s.active_cycles = activecycles;
     iowrite32 (channel -> cycles.initializer, channel -> period_reg_addr);
 
-    printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
+    // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
 
     return size;
   }
