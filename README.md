@@ -10,6 +10,7 @@ Installation
 ------
 <pre>
 > git clone https://github.com/iboguslavsky/pwm-sunxi-opi0.git
+> cd pwm-sunxi-opi0
 > make
 > insmod pwm-sunxi-opi0.ko
 </pre>
