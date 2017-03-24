@@ -11,4 +11,4 @@
 > ./linear.pl
 </pre>
 
-[Demo #1](https://youtu.be/HygwKhkkr18)
+[![Orange Pi Zero PWM](http://img.youtube.com/vi/HygwKhkkr18/0.jpg)](http://www.youtube.com/watch?v=HygwKhkkr18)
