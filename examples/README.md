@@ -11,5 +11,5 @@
 > ./linear.pl
 </pre>
 
-![OPI0 PWM Driver Demo](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00003.gif "Orange Pi Zero PWM LED Example" | width=400)
-![OPI0 PWM Driver Demo](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00000.gif "Orange Pi Zero PWM LED Example" | width=400)
+![OPI0 PWM Driver Demo](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00003.gif "Orange Pi Zero PWM LED Example")
+![OPI0 PWM Driver Demo](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00000.gif "Orange Pi Zero PWM LED Example")
