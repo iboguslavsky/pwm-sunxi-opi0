@@ -11,4 +11,4 @@
 > ./linear.pl
 </pre>
 
-<img src="https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00003.gif" width="400">
+<img src="https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/images/00003.gif" width="400">

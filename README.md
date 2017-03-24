@@ -6,7 +6,7 @@ Loadable Kernel Module to support PWM on Allwinner H3 / H2+ SoC (sun8i / sun8iw7
 
 Provides access to PWM configuration parameters from userspace. Only exposes PWM0 (PWM1 will be added once H2+ SoC documentation is available). PWM0 output is on PA05, which is exposed as UART0_RX (middle pin on the UART header). 
 
-<img src="https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/examples/00000.gif" width="500">
+<img src="https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/images/00000.gif" width="500">
 
 Installation
 ------
@@ -59,7 +59,7 @@ Once loaded, the following sysfs directory structure will be created:
 </pre>
 ---
 **Positive Polarity PWM cadence diagram**
-![PWM Cadence](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/pwm.png "PWM Cadence Diagram")
+![PWM Cadence](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/images/pwm.png "PWM Cadence Diagram")
 
   * **run** (read / write)
   
