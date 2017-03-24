@@ -11,4 +11,10 @@
 > ./linear.pl
 </pre>
 
-[![Orange Pi Zero PWM](http://img.youtube.com/vi/HygwKhkkr18/0.jpg)](http://www.youtube.com/watch?v=HygwKhkkr18)
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=HygwKhkkr18
+" target="_blank"><img src="http://img.youtube.com/vi/HygwKhkkr18/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="380" border="10" /></a>
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=pzYALMq6Qbg
+" target="_blank"><img src="http://img.youtube.com/vi/pzYALMq6Qbg/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="380" border="10" /></a>
