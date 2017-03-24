@@ -6,7 +6,13 @@ Loadable Kernel Module to support PWM on Allwinner H3 / H2+ SoC (sun8i / sun8iw7
 
 Provides access to PWM configuration parameters from userspace. Only exposes PWM0 (PWM1 will be added once H2+ SoC documentation is available). PWM0 output is on PA5, which is exposed as UART0_RX (middle pin on the UART header). Remap in FEX.
 
-Once loaded, the following sysfs directory structure is created:
+Installation
+------
+> git clone https://github.com/iboguslavsky/pwm-sunxi-opi0.git
+> make
+> insmod pwm-sunxi-opi0.ko
+
+Once loaded, the following sysfs directory structure will be created:
 
 <pre>
 /sys
