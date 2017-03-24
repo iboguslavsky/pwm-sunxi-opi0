@@ -8,9 +8,11 @@ Provides access to PWM configuration parameters from userspace. Only exposes PWM
 
 Installation
 ------
+<pre>
 > git clone https://github.com/iboguslavsky/pwm-sunxi-opi0.git
 > make
 > insmod pwm-sunxi-opi0.ko
+</pre>
 
 Once loaded, the following sysfs directory structure will be created:
 
