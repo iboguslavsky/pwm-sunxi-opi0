@@ -13,12 +13,10 @@ MODULE_AUTHOR("Igor Boguslavsky");
 MODULE_DESCRIPTION("PWM driver for the Orage Pi Zero"); 
 MODULE_VERSION("0.1");           
  
-#define SW_PORTC_IO_BASE  0x01c20800 	// dataregister 
-#define PWM_CH0_CTRL  0x01c21400 	// pwm0 control register
-#define PWM_CH0_PERIOD  0x01c21404 	// pwm0 period register
-
-static struct class pwm_class;
-struct kobject *pwm0_kobj;
+#define PA_CFG0_REG	  	0x01c20800 		// PORT B control register 
+#define PWM_CTRL_REG	  	0x01c21400 		// PWM control register
+#define PWM_CH0_PERIOD  	PWM_CTRL_REG+0x04	// pwm0 period register
+#define PWM_CH1_PERIOD  	PWM_CTRL_REG+0x08	// pwm1 period register
 
 static struct class_attribute pwm_class_attrs[] = {
   __ATTR_NULL
@@ -53,16 +51,28 @@ static const __u32 clock_divider[] = {
   120, 180, 240, 360, 480, -1, -1, -1, 12000, 24000, 36000, 48000, 72000, -1, -1, 1};
 
 struct h2plus_pwm_ctrl {
-  enum h2plus_pwm_prescale prescaler:4; // Prescalar setting, 4 bits long
-  unsigned int ch_en:1;                 // pwm chan enable
-  unsigned int ch_act_state:1;          // pwm chan polarity (0=active low, 1=active high)
-  unsigned int ch_clk_gating:1;         // Allow clock to run 
-  unsigned int ch_mode:1;               // Mode - 0 = cycle(running), 1=only 1 pulse */
-  unsigned int ch_pulse_start:1;        // Write 1 for mode pulse above to start
-  unsigned int ch_clock_bypass:1;	// Main clock bypass PWM and output on the PWM pin
-  unsigned int unused1:18;              // Bits 10-27 are unused in H2+ PWM control register
-  unsigned int ch_period_reg_ready:1;	// Period register ready bit
-  unsigned int unused2:3;               // Bits 29-31 are unused in H2+ PWM control register 
+  enum h2plus_pwm_prescale pwm_ch0_prescal:4; 	// Prescalar setting, 4 bits long
+  unsigned int pwm_ch0_en:1;                 	// pwm chan enable
+  unsigned int pwm_ch0_act_sta:1;          	// pwm chan polarity (0=active low, 1=active high)
+  unsigned int sclk_ch0_gating:1;         	// Allow clock to run 
+  unsigned int pwm_ch0_mode:1;             	// Mode - 0 = cycle(running), 1=only 1 pulse */
+  unsigned int pwm_ch0_pul_start:1;        	// Write 1 for mode pulse above to start
+  unsigned int pwm0_bypass:1;			// Main clock bypass PWM and output on the PWM pin
+  unsigned int unused1:5;              		// Bits 10-14 are unused in H2+ PWM control register
+  //
+  enum h2plus_pwm_prescale pwm_ch1_prescal:4;
+  unsigned int pwm_ch1_en:1;                 	
+  unsigned int pwm_ch1_act_sta:1;          	
+  unsigned int sclk_ch1_gating:1;         	
+  unsigned int pwm_ch1_mode:1;             
+  unsigned int pwm_ch1_pul_start:1;        	
+  unsigned int pwm1_bypass:1;			
+  unsigned int unused2:3;	
+  //           			
+  unsigned int pwm0_rdy:1;			// CH0 Period register ready bit (1: busy, 0:ready to write)
+  unsigned int pwm1_rdy:1;			// CH1 Period register ready bit
+  //	
+  unsigned int unused3:2;
 };
 
 union h2plus_pwm_ctrl_u {
@@ -82,9 +92,9 @@ union h2plus_pwm_period_u {
 
 struct pwm_channel {
 
+  unsigned int channel;
   unsigned int use_count;
 
-  void __iomem *pin_addr;
   void __iomem *ctrl_addr;
   void __iomem *period_reg_addr;
 
@@ -136,40 +146,72 @@ static const struct attribute_group pwm_attr_group = {
   .attrs = (struct attribute **) pwm_attrs
 };
 
-struct device *pwm0;
+static struct class pwm_class;
 
-static struct pwm_channel channel;
+struct kobject *pwm0_kobj;
+struct kobject *pwm1_kobj;
+
+struct device *pwm0;
+struct device *pwm1;
+
+// Two available PWM channels on OPI0
+static struct pwm_channel channel[2];
 
 static int __init opi0_init (void) {
 int ret;
+void __iomem *pa_cfg0_reg;	// Port A config register
 __u32 data;
 
-  ret = class_register (&pwm_class);
-
-  if (ret) {
+  if (class_register (&pwm_class)) {
     class_unregister (&pwm_class);
+    return -ENODEV;
   }
 
-  pwm0 = device_create (&pwm_class, NULL, MKDEV(0,0), &channel, "pwm0");
+  pwm0 = device_create (&pwm_class, NULL, MKDEV(0,0), &channel[0], "pwm0");
   pwm0_kobj = &pwm0 -> kobj;
 
-  ret = sysfs_create_group (pwm0_kobj, &pwm_attr_group);
-
+  pwm1 = device_create (&pwm_class, NULL, MKDEV(0,0), &channel[1], "pwm1");
+  pwm1_kobj = &pwm1 -> kobj;
+	
+  if (sysfs_create_group (pwm0_kobj, &pwm_attr_group)}
+    class_unregister (&pwm_class);
+    return -ENODEV;
+  }
+	
+  if (sysfs_create_group (pwm1_kobj, &pwm_attr_group)}
+    class_unregister (&pwm_class);
+    return -ENODEV;
+  }
+   
+  // Help identify individual channels based on private data
+  channel[0].channel = 0;
+  channel[1].channel = 1;
+      
   // Map important registers into kernel address space
-  channel.pin_addr        = ioremap (SW_PORTC_IO_BASE, 4);
-  channel.ctrl_addr       = ioremap (PWM_CH0_CTRL ,4);
-  channel.period_reg_addr = ioremap (PWM_CH0_PERIOD, 4);
+  channel[0].ctrl_addr       = ioremap (PWM_CH0_CTRL ,4);
+  channel[0].period_reg_addr = ioremap (PWM_CH0_PERIOD, 4);
+  channel[1].ctrl_addr       = ioremap (PWM_CH1_CTRL ,4);
+  channel[1].period_reg_addr = ioremap (PWM_CH1_PERIOD, 4);
 
-  // Set up PA5 for PWM (used as UART0 RX by default - remap in FEX)
-  data = ioread32 (channel.pin_addr);
+  // Set up PA5 for PWM0 (UART0 RX by default - remap in FEX)
+  // Set up PA6 for PWM1
+  pa_cfg0_reg = ioremap (PA_CFG0_REG, 4);
+  data = ioread32 (pa_cfg0_reg);
+      
+  // "011" in H3, "010" in A33 - try each one
+  // PA05
   data |= (1<<20);     
   data |= (1<<21);
   data &= ~(1<<22);
+  // PA06
+  data |= (1<<24);     
+  data |= (1<<25);
+  data &= ~(1<<26);
 
-  iowrite32 (data, channel.pin_addr);
+  iowrite32 (data, pa_cfg0_reg);
 
   printk(KERN_INFO "[%s] initialized ok\n", pwm_class.name);
-  return ret;
+  return 0;
 }
  
 static void __exit opi0_exit(void){
@@ -178,12 +220,12 @@ static void __exit opi0_exit(void){
   channel.ctrl.s.ch_en = 0;
   iowrite32 (channel.ctrl.s.ch_en, channel.ctrl_addr);
 
-  iounmap (channel.pin_addr);
+  // iounmap (channel.pin_addr);
   iounmap (channel.ctrl_addr);
   iounmap (channel.period_reg_addr);
 
   device_destroy (&pwm_class, pwm0->devt);
-  class_unregister(&pwm_class);
+  class_unregister (&pwm_class);
 
   printk(KERN_INFO "[%s] exiting\n", pwm_class.name);
 }
