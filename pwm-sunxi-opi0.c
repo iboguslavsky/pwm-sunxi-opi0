@@ -410,29 +410,49 @@ static ssize_t pwm_freqperiod_store (struct device *dev, struct device_attribute
 ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan) {
 union h2plus_pwm_ctrl_u ctrl_reg;
 
-  chan -> ctrl.initializer = 0;
+  chan -> ctrl.initializer = ioread32 (chan -> ctrl_addr);
 
-  chan -> ctrl.s.ch_en = enable;
-  chan -> ctrl.s.ch_act_state = 1;
-  chan -> ctrl.s.ch_clk_gating = 1;
-  chan -> ctrl.s.ch_mode = 0;  // cycle mode
+  if (chan -> channel == 0) {
+    chan -> ctrl.s.pwm_ch0_en      = enable;
+    chan -> ctrl.s.pwm_ch0_act_sta = 1;
+    chan -> ctrl.s.sclk_ch0_gating = 1;
+    chan -> ctrl.s.pwm_ch0_mode    = 0;  // cycle mode
 
-  // 24 MHz clock (no prescaler)
-  // chan -> ctrl.s.prescaler = PRESCALE_DIV_NO;
-  chan -> ctrl.s.prescaler = PRESCALE_DIV240;
+    // 24 MHz clock (no prescaler)
+    // chan -> ctrl.s.pwm_ch0_prescal = PRESCALE_DIV_NO;
+    chan -> ctrl.s.pwm_ch0_prescal = PRESCALE_DIV240;
+	  
+    iowrite32 (chan -> ctrl.initializer, chan -> ctrl_addr);
 
-  iowrite32 (chan -> ctrl.initializer, chan -> ctrl_addr);
+    // Wait until period register is ready for write
+    do {
+      ctrl_reg.initializer = ioread32(chan -> ctrl_addr);
+    }
+    while (ctrl_reg.s.pwm0_rdy); // 1 if busy
+}
 
+   if (chan -> channel == 1) {
+    chan -> ctrl.s.pwm_ch1_en      = enable;
+    chan -> ctrl.s.pwm_ch1_act_sta = 1;
+    chan -> ctrl.s.sclk_ch1_gating = 1;
+    chan -> ctrl.s.pwm_ch1_mode    = 0;  // cycle mode
+
+    // 24 MHz clock (no prescaler)
+    // chan -> ctrl.s.pwm_ch1_prescal = PRESCALE_DIV_NO;
+    chan -> ctrl.s.pwm_ch1_prescal = PRESCALE_DIV240;
+	     
+    iowrite32 (chan -> ctrl.initializer, chan -> ctrl_addr);
+	   
+    // Wait until period register is ready for write
+    do {
+      ctrl_reg.initializer = ioread32(chan -> ctrl_addr);
+    }
+    while (ctrl_reg.s.pwm1_rdy); // 1 if busy
+  }
+	
   // 50% duty
   chan -> cycles.s.entire_cycles = 1;
   chan -> cycles.s.active_cycles = 1;
-
-  // Wait until period register is ready for write
-  do {
-    ctrl_reg.initializer = ioread32(chan -> ctrl_addr);
-  }
-  while (ctrl_reg.s.ch_period_reg_ready); // 1 if busy
-
   iowrite32 (chan -> cycles.initializer, chan -> period_reg_addr);
 
   return 1;
