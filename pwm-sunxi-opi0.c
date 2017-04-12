@@ -216,8 +216,9 @@ __u32 data;
  
 static void __exit opi0_exit(void){
 
-  // Stop pwm
-  channel.ctrl.s.ch_en = 0;
+  // Stop pwms
+  channel.ctrl.s.pwm_ch0_en = 0;
+  channel.ctrl.s.pwm_ch1_en = 0;
   iowrite32 (channel.ctrl.s.ch_en, channel.ctrl_addr);
 
   // iounmap (channel.pin_addr);
@@ -245,7 +246,7 @@ static ssize_t pwm_polarity_show (struct device *dev, struct device_attribute *a
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
   ssize_t status = 0;
-  status = sprintf (buf, "%u\n", channel -> ctrl.s.ch_act_state);
+  status = sprintf (buf, "%u\n", channel -> channel ? channel -> ctrl.s.pwm_ch1_act_sta : channel -> ctrl.s.pwm_ch0_act_sta);
 
   return status;
 }
@@ -255,7 +256,7 @@ static ssize_t pwm_prescale_show (struct device *dev, struct device_attribute *a
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
   ssize_t status = 0;
-  status = sprintf (buf, "%u\n", channel -> ctrl.s.prescaler);
+  status = sprintf (buf, "%u\n", channel -> channel ?  channel -> ctrl.s.pwm_ch1_prescal : channel -> ctrl.s.pwm_ch0_prescal);
 
   return status;
 }
@@ -286,7 +287,9 @@ unsigned int clk_freq, pwm_freq;
 
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
-  clk_freq = (unsigned int) 24000000 / clock_divider[channel -> ctrl.s.prescaler];
+  clk_freq = (unsigned int) 24000000 / clock_divider[channel -> channel ?  
+						     channel -> ctrl.s.pwm_ch1_prescal : channel -> ctrl.s.pwm_ch0_prescal];
+	
   pwm_freq = (unsigned int) clk_freq / (channel -> cycles.s.entire_cycles + 1);
 
   status = sprintf (buf, "%uhz\n", pwm_freq);
