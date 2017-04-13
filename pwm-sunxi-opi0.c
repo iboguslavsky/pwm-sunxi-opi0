@@ -326,13 +326,13 @@ union h2plus_pwm_period_u pwm0_period_reg, pwm1_period_reg; 	// Period registers
     PWM0 Channel Polarity: %d\n\
     PWM0 Channel Gating: %d\n\
     PWM0 Channel Mode: %d\n\
-    PWM0 Channel Clock Bypass: %d\n\
+    PWM0 Channel Clock Bypass: %d\n\n\
     PWM1 Channel Prescaler: 0x%04x\n\
     PWM1 Channel Enable: %d\n\
     PWM1 Channel Polarity: %d\n\
     PWM1 Channel Gating: %d\n\
     PWM1 Channel Mode: %d\n\
-    PWM1 Channel Clock Bypass: %d\n \
+    PWM1 Channel Clock Bypass: %d\n\n\
   PWM0 Entire Cycles: 0x%04x, PWM0 Active Cycles: 0x%04x\n\
   PWM1 Entire Cycles: 0x%04x, PWM1 Active Cycles: 0x%04x\n",
     pin_ctrl.PA5_SELECT, pin_ctrl.PA6_SELECT,
