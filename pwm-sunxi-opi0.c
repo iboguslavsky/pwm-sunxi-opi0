@@ -95,37 +95,13 @@ struct pwm_channel {
   unsigned int channel;
   unsigned int use_count;
 
+  enum h2plus_pwm_prescale prescale;  
   __u8 enable, polarity, gating, mode, pulse_start, bypass;
 
-  void __iomem *ctrl_addr;
+  // PWM timing structures (entire cycles, active cycles)
   void __iomem *period_reg_addr;
-
-  enum h2plus_pwm_prescale prescale;  
-
-  // Prescale, polarity, enabled 
-  union h2plus_pwm_ctrl_u ctrl;
-
-  // Entire cycles, active cycles
   union h2plus_pwm_period_u cycles;
 };
-
-static ssize_t pwm_run_show (struct device *dev,struct device_attribute *attr, char *buf);
-static ssize_t pwm_polarity_show (struct device *dev,struct device_attribute *attr, char *buf);
-static ssize_t pwm_prescale_show (struct device *dev,struct device_attribute *attr, char *buf);
-static ssize_t pwm_entirecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
-static ssize_t pwm_activecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
-static ssize_t pwm_freqperiod_show (struct device *dev,struct device_attribute *attr, char *buf);
-
-static ssize_t pwm_run_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-static ssize_t pwm_polarity_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-static ssize_t pwm_prescale_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-static ssize_t pwm_entirecycles_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-static ssize_t pwm_activecycles_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-static ssize_t pwm_freqperiod_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
-
-// Helper functions
-ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan);
-int update_ctrl_reg (void);
 
 // no pulse mode for now; just cycle mode
 static DEVICE_ATTR(run, 0644, pwm_run_show, pwm_run_store);
@@ -149,6 +125,8 @@ static const struct attribute_group pwm_attr_group = {
   .attrs = (struct attribute **) pwm_attrs
 };
 
+void __iomem *ctrl_reg_addr; 
+
 static struct class pwm_class;
 
 struct kobject *pwm0_kobj;
@@ -159,6 +137,25 @@ struct device *pwm1;
 
 // Two available PWM channels on OPI0
 static struct pwm_channel channel[2];
+
+// sysfs access functions
+static ssize_t pwm_run_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_polarity_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_prescale_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_entirecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_activecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_freqperiod_show (struct device *dev,struct device_attribute *attr, char *buf);
+
+static ssize_t pwm_run_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+static ssize_t pwm_polarity_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+static ssize_t pwm_prescale_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+static ssize_t pwm_entirecycles_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+static ssize_t pwm_activecycles_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+static ssize_t pwm_freqperiod_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
+
+// Helper functions
+ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan);
+int update_ctrl_reg (void);
 
 static int __init opi0_init (void) {
 void __iomem *pa_cfg0_reg;	// Port A config register
@@ -194,9 +191,8 @@ __u32 data;
   channel[1].channel = 1;
       
   // Map important registers into kernel address space
-  channel[0].ctrl_addr       = ioremap (PWM_CTRL_REG ,4);
+  ctrl_reg_addr = ioremap (PWM_CTRL_REG ,4);
   channel[0].period_reg_addr = ioremap (PWM_CH0_PERIOD, 4);
-  channel[1].ctrl_addr       = ioremap (PWM_CTRL_REG ,4);
   channel[1].period_reg_addr = ioremap (PWM_CH1_PERIOD, 4);
 
   // Set up PA5 for PWM0 (UART0 RX by default - remap in FEX)
@@ -222,12 +218,12 @@ __u32 data;
  
 static void __exit opi0_exit(void){
 
-  // Stop pwms
+  // Stop PWMs
   channel[0].enable = 0;
   channel[1].enable = 0;
   update_ctrl_reg();
 
-  iounmap (channel[0].ctrl_addr);
+  iounmap (ctrl_reg_addr);
   iounmap (channel[0].period_reg_addr);
   iounmap (channel[1].period_reg_addr);
 
@@ -238,7 +234,6 @@ static void __exit opi0_exit(void){
   printk(KERN_INFO "[%s] exiting\n", pwm_class.name);
 }
  
-
 // Accessors
 //
 static ssize_t pwm_run_show (struct device *dev, struct device_attribute *attr, char *buf) {
@@ -372,7 +367,6 @@ static ssize_t pwm_prescale_store (struct device *dev, struct device_attribute *
 }
 
 static ssize_t pwm_entirecycles_store (struct device *dev, struct device_attribute *attr, const char *buf, size_t size) {
-
 __u16 entirecycles = 0;
 union h2plus_pwm_ctrl_u ctrl_reg;
 
@@ -387,13 +381,13 @@ union h2plus_pwm_ctrl_u ctrl_reg;
     // Wait until period register is ready for write
     if (channel -> channel == 0) {
       do {
-        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+        ctrl_reg.initializer = ioread32 (ctrl_reg_addr);
       }
       while (ctrl_reg.s.pwm0_rdy); // 1 if busy
     }
     else {
       do {
-        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+        ctrl_reg.initializer = ioread32 (ctrl_reg_addr);
       }
       while (ctrl_reg.s.pwm1_rdy); // 1 if busy
     }
@@ -410,7 +404,6 @@ union h2plus_pwm_ctrl_u ctrl_reg;
 }
 
 static ssize_t pwm_activecycles_store (struct device *dev, struct device_attribute *attr, const char *buf, size_t size) {
-
 __u16 activecycles = 0;
 union h2plus_pwm_ctrl_u ctrl_reg;
 
@@ -424,13 +417,13 @@ union h2plus_pwm_ctrl_u ctrl_reg;
     // Wait until period register is ready for write
     if (channel -> channel == 0) {
       do {
-        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+        ctrl_reg.initializer = ioread32 (ctrl_reg_addr);
       }
       while (ctrl_reg.s.pwm0_rdy); // 1 if busy
     }
     else {
       do {
-        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+        ctrl_reg.initializer = ioread32 (ctrl_reg_addr);
       }
       while (ctrl_reg.s.pwm1_rdy); // 1 if busy
     }
@@ -453,7 +446,6 @@ static ssize_t pwm_freqperiod_store (struct device *dev, struct device_attribute
 
 // Helpers
 ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan) {
-// union h2plus_pwm_ctrl_u ctrl_reg;
 
   chan -> enable   = enable;
   chan -> polarity = 1;
@@ -485,7 +477,7 @@ union h2plus_pwm_ctrl_u ctrl;
   ctrl.s.pwm_ch1_pul_start = channel[1].pulse_start;
   ctrl.s.pwm1_bypass       = channel[1].bypass;
 
-  iowrite32 (ctrl.initializer, channel[0].ctrl_addr); // both channel[0] and [1] refer to the same ctrl reg
+  iowrite32 (ctrl.initializer, ctrl_reg_addr); // both channel[0] and [1] refer to the same ctrl reg
   return 0;
 }
 
