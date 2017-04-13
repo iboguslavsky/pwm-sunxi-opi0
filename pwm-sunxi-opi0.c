@@ -11,7 +11,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Igor Boguslavsky");
 MODULE_DESCRIPTION("PWM driver for the Orage Pi Zero"); 
-MODULE_VERSION("0.1");           
+MODULE_VERSION("2.0");           
  
 #define PA_CFG0_REG	  	0x01c20800 		// PORT B control register 
 #define PWM_CTRL_REG	  	0x01c21400 		// PWM control register
@@ -95,6 +95,8 @@ struct pwm_channel {
   unsigned int channel;
   unsigned int use_count;
 
+  __u8 enable, polarity, gating, mode, pulse_start, bypass;
+
   void __iomem *ctrl_addr;
   void __iomem *period_reg_addr;
 
@@ -123,6 +125,7 @@ static ssize_t pwm_freqperiod_store (struct device *dev,struct device_attribute 
 
 // Helper functions
 ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan);
+int update_ctrl_reg (void);
 
 // no pulse mode for now; just cycle mode
 static DEVICE_ATTR(run, 0644, pwm_run_show, pwm_run_store);
@@ -158,7 +161,6 @@ struct device *pwm1;
 static struct pwm_channel channel[2];
 
 static int __init opi0_init (void) {
-int ret;
 void __iomem *pa_cfg0_reg;	// Port A config register
 __u32 data;
 
@@ -173,12 +175,16 @@ __u32 data;
   pwm1 = device_create (&pwm_class, NULL, MKDEV(0,0), &channel[1], "pwm1");
   pwm1_kobj = &pwm1 -> kobj;
 	
-  if (sysfs_create_group (pwm0_kobj, &pwm_attr_group)}
+  if (sysfs_create_group (pwm0_kobj, &pwm_attr_group)) {
+    device_destroy (&pwm_class, pwm0->devt);
+    device_destroy (&pwm_class, pwm1->devt);
     class_unregister (&pwm_class);
     return -ENODEV;
   }
 	
-  if (sysfs_create_group (pwm1_kobj, &pwm_attr_group)}
+  if (sysfs_create_group (pwm1_kobj, &pwm_attr_group)) {
+    device_destroy (&pwm_class, pwm0->devt);
+    device_destroy (&pwm_class, pwm1->devt);
     class_unregister (&pwm_class);
     return -ENODEV;
   }
@@ -188,9 +194,9 @@ __u32 data;
   channel[1].channel = 1;
       
   // Map important registers into kernel address space
-  channel[0].ctrl_addr       = ioremap (PWM_CH0_CTRL ,4);
+  channel[0].ctrl_addr       = ioremap (PWM_CTRL_REG ,4);
   channel[0].period_reg_addr = ioremap (PWM_CH0_PERIOD, 4);
-  channel[1].ctrl_addr       = ioremap (PWM_CH1_CTRL ,4);
+  channel[1].ctrl_addr       = ioremap (PWM_CTRL_REG ,4);
   channel[1].period_reg_addr = ioremap (PWM_CH1_PERIOD, 4);
 
   // Set up PA5 for PWM0 (UART0 RX by default - remap in FEX)
@@ -217,15 +223,16 @@ __u32 data;
 static void __exit opi0_exit(void){
 
   // Stop pwms
-  channel.ctrl.s.pwm_ch0_en = 0;
-  channel.ctrl.s.pwm_ch1_en = 0;
-  iowrite32 (channel.ctrl.s.ch_en, channel.ctrl_addr);
+  channel[0].enable = 0;
+  channel[1].enable = 0;
+  update_ctrl_reg();
 
-  // iounmap (channel.pin_addr);
-  iounmap (channel.ctrl_addr);
-  iounmap (channel.period_reg_addr);
+  iounmap (channel[0].ctrl_addr);
+  iounmap (channel[0].period_reg_addr);
+  iounmap (channel[1].period_reg_addr);
 
-  device_destroy (&pwm_class, pwm0->devt);
+  device_destroy (&pwm_class, pwm0 -> devt);
+  device_destroy (&pwm_class, pwm1 -> devt);
   class_unregister (&pwm_class);
 
   printk(KERN_INFO "[%s] exiting\n", pwm_class.name);
@@ -238,7 +245,7 @@ static ssize_t pwm_run_show (struct device *dev, struct device_attribute *attr, 
 
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
-  return sprintf (buf, "%u\n", channel -> ctrl.s.ch_en);
+  return sprintf (buf, "%u\n", channel -> enable);
 }
 
 static ssize_t pwm_polarity_show (struct device *dev, struct device_attribute *attr, char *buf) {
@@ -246,7 +253,7 @@ static ssize_t pwm_polarity_show (struct device *dev, struct device_attribute *a
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
   ssize_t status = 0;
-  status = sprintf (buf, "%u\n", channel -> channel ? channel -> ctrl.s.pwm_ch1_act_sta : channel -> ctrl.s.pwm_ch0_act_sta);
+  status = sprintf (buf, "%u\n", channel -> polarity);
 
   return status;
 }
@@ -256,7 +263,7 @@ static ssize_t pwm_prescale_show (struct device *dev, struct device_attribute *a
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
   ssize_t status = 0;
-  status = sprintf (buf, "%u\n", channel -> channel ?  channel -> ctrl.s.pwm_ch1_prescal : channel -> ctrl.s.pwm_ch0_prescal);
+  status = sprintf (buf, "%u\n", channel -> prescale);
 
   return status;
 }
@@ -287,9 +294,7 @@ unsigned int clk_freq, pwm_freq;
 
   const struct pwm_channel *channel = dev_get_drvdata (dev);
 
-  clk_freq = (unsigned int) 24000000 / clock_divider[channel -> channel ?  
-						     channel -> ctrl.s.pwm_ch1_prescal : channel -> ctrl.s.pwm_ch0_prescal];
-	
+  clk_freq = (unsigned int) 24000000 / clock_divider[channel -> prescale];
   pwm_freq = (unsigned int) clk_freq / (channel -> cycles.s.entire_cycles + 1);
 
   status = sprintf (buf, "%uhz\n", pwm_freq);
@@ -330,11 +335,12 @@ unsigned char polarity = 0;
   if (sscanf (buf, "%hhu", &polarity)) {
 
     if (polarity > 0) 
-      channel -> ctrl.s.ch_act_state = 1;
+      channel -> polarity = 1;
     else 
-      channel -> ctrl.s.ch_act_state = 0;
+      channel -> polarity = 0;
 
-    iowrite32 (channel -> ctrl.initializer, channel -> ctrl_addr);
+    update_ctrl_reg();
+
     printk (KERN_INFO "[%s] polarity set to: %u\n", pwm_class.name, polarity);
 
     return size;
@@ -353,9 +359,10 @@ static ssize_t pwm_prescale_store (struct device *dev, struct device_attribute *
 
     if (prescale >= PRESCALE_DIV120 && prescale <= PRESCALE_DIV_NO) {
 
-      // check for invalid prescale settings!
-      channel -> ctrl.s.prescaler = prescale;  
-      iowrite32 (channel -> ctrl.initializer, channel -> ctrl_addr);
+      // check for invalid prescale settings here
+      channel -> prescale = prescale;  
+
+      update_ctrl_reg();
 
       return size;
     }
@@ -367,7 +374,9 @@ static ssize_t pwm_prescale_store (struct device *dev, struct device_attribute *
 static ssize_t pwm_entirecycles_store (struct device *dev, struct device_attribute *attr, const char *buf, size_t size) {
 
 __u16 entirecycles = 0;
-struct pwm_channel *channel = dev_get_drvdata (dev);
+union h2plus_pwm_ctrl_u ctrl_reg;
+
+  struct pwm_channel *channel = dev_get_drvdata (dev);
 
   // Successful sscanf?
   if (sscanf (buf, "%hu", &entirecycles)) {
@@ -375,9 +384,24 @@ struct pwm_channel *channel = dev_get_drvdata (dev);
     // Could be anything between 0 and 65535
     channel -> cycles.s.entire_cycles = entirecycles;  
 
+    // Wait until period register is ready for write
+    if (channel -> channel == 0) {
+      do {
+        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+      }
+      while (ctrl_reg.s.pwm0_rdy); // 1 if busy
+    }
+    else {
+      do {
+        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+      }
+      while (ctrl_reg.s.pwm1_rdy); // 1 if busy
+    }
+
     iowrite32 (channel -> cycles.initializer, channel -> period_reg_addr);
 
-    // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
+    printk (KERN_INFO "[%s] entire_cycles: 0x%04x active_cycles: 0x%04x\n", 
+      pwm_class.name, channel -> cycles.s.entire_cycles, channel -> cycles.s.active_cycles);
 
     return size;
   }
@@ -388,15 +412,33 @@ struct pwm_channel *channel = dev_get_drvdata (dev);
 static ssize_t pwm_activecycles_store (struct device *dev, struct device_attribute *attr, const char *buf, size_t size) {
 
 __u16 activecycles = 0;
-struct pwm_channel *channel = dev_get_drvdata (dev);
+union h2plus_pwm_ctrl_u ctrl_reg;
+
+  struct pwm_channel *channel = dev_get_drvdata (dev);
 
   if (sscanf (buf, "%hu", &activecycles)) {
 
     // Could be anything between 0 and 65535
     channel -> cycles.s.active_cycles = activecycles;
+
+    // Wait until period register is ready for write
+    if (channel -> channel == 0) {
+      do {
+        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+      }
+      while (ctrl_reg.s.pwm0_rdy); // 1 if busy
+    }
+    else {
+      do {
+        ctrl_reg.initializer = ioread32 (channel -> ctrl_addr);
+      }
+      while (ctrl_reg.s.pwm1_rdy); // 1 if busy
+    }
+
     iowrite32 (channel -> cycles.initializer, channel -> period_reg_addr);
 
-    // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
+    printk (KERN_INFO "[%s] entire_cycles: 0x%04x active_cycles: 0x%04x\n", 
+      pwm_class.name, channel -> cycles.s.entire_cycles, channel -> cycles.s.active_cycles);
 
     return size;
   }
@@ -411,54 +453,40 @@ static ssize_t pwm_freqperiod_store (struct device *dev, struct device_attribute
 
 // Helpers
 ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan) {
-union h2plus_pwm_ctrl_u ctrl_reg;
+// union h2plus_pwm_ctrl_u ctrl_reg;
 
-  chan -> ctrl.initializer = ioread32 (chan -> ctrl_addr);
-
-  if (chan -> channel == 0) {
-    chan -> ctrl.s.pwm_ch0_en      = enable;
-    chan -> ctrl.s.pwm_ch0_act_sta = 1;
-    chan -> ctrl.s.sclk_ch0_gating = 1;
-    chan -> ctrl.s.pwm_ch0_mode    = 0;  // cycle mode
-
-    // 24 MHz clock (no prescaler)
-    // chan -> ctrl.s.pwm_ch0_prescal = PRESCALE_DIV_NO;
-    chan -> ctrl.s.pwm_ch0_prescal = PRESCALE_DIV240;
+  chan -> enable   = enable;
+  chan -> polarity = 1;
+  chan -> gating   = 1;
+  chan -> mode     = 0;  // cycle mode
+  chan -> prescale = PRESCALE_DIV240; // or PRESCALE_DIV_NO (24Mhz)
 	  
-    iowrite32 (chan -> ctrl.initializer, chan -> ctrl_addr);
-
-    // Wait until period register is ready for write
-    do {
-      ctrl_reg.initializer = ioread32(chan -> ctrl_addr);
-    }
-    while (ctrl_reg.s.pwm0_rdy); // 1 if busy
-}
-
-   if (chan -> channel == 1) {
-    chan -> ctrl.s.pwm_ch1_en      = enable;
-    chan -> ctrl.s.pwm_ch1_act_sta = 1;
-    chan -> ctrl.s.sclk_ch1_gating = 1;
-    chan -> ctrl.s.pwm_ch1_mode    = 0;  // cycle mode
-
-    // 24 MHz clock (no prescaler)
-    // chan -> ctrl.s.pwm_ch1_prescal = PRESCALE_DIV_NO;
-    chan -> ctrl.s.pwm_ch1_prescal = PRESCALE_DIV240;
-	     
-    iowrite32 (chan -> ctrl.initializer, chan -> ctrl_addr);
-	   
-    // Wait until period register is ready for write
-    do {
-      ctrl_reg.initializer = ioread32(chan -> ctrl_addr);
-    }
-    while (ctrl_reg.s.pwm1_rdy); // 1 if busy
-  }
-	
-  // 50% duty
-  chan -> cycles.s.entire_cycles = 1;
-  chan -> cycles.s.active_cycles = 1;
-  iowrite32 (chan -> cycles.initializer, chan -> period_reg_addr);
+  update_ctrl_reg();
 
   return 1;
+}
+
+int update_ctrl_reg () {
+union h2plus_pwm_ctrl_u ctrl;
+
+  ctrl.s.pwm_ch0_prescal   = channel[0].prescale;
+  ctrl.s.pwm_ch0_en        = channel[0].enable; 
+  ctrl.s.pwm_ch0_act_sta   = channel[0].polarity; 
+  ctrl.s.sclk_ch0_gating   = channel[0].gating;
+  ctrl.s.pwm_ch0_mode      = channel[0].mode; 
+  ctrl.s.pwm_ch0_pul_start = channel[0].pulse_start;
+  ctrl.s.pwm0_bypass       = channel[0].bypass;
+
+  ctrl.s.pwm_ch1_prescal   = channel[1].prescale;
+  ctrl.s.pwm_ch1_en        = channel[1].enable; 
+  ctrl.s.pwm_ch1_act_sta   = channel[1].polarity; 
+  ctrl.s.sclk_ch1_gating   = channel[1].gating;
+  ctrl.s.pwm_ch1_mode      = channel[1].mode; 
+  ctrl.s.pwm_ch1_pul_start = channel[1].pulse_start;
+  ctrl.s.pwm1_bypass       = channel[1].bypass;
+
+  iowrite32 (ctrl.initializer, channel[0].ctrl_addr); // both channel[0] and [1] refer to the same ctrl reg
+  return 0;
 }
 
 module_init(opi0_init);
