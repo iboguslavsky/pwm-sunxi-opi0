@@ -28,6 +28,14 @@ static struct class pwm_class = {
   .class_attrs =  pwm_class_attrs,
 };
 
+struct portA_ctrl {
+  unsigned int unused1: 20;
+  unsigned int PA5_SELECT: 3;		// PA05 multi-function pin
+  unsigned int unused2: 1;
+  unsigned int PA6_SELECT: 3;		// PA06 multi-function pin
+  unsigned int unused3: 5;
+};
+
 enum h2plus_pwm_prescale {
   PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
   PRESCALE_DIV180  = 0x01,
@@ -159,7 +167,7 @@ int update_ctrl_reg (void);
 
 static int __init opi0_init (void) {
 void __iomem *pa_cfg0_reg;	// Port A config register
-__u32 data;
+struct portA_ctrl pin_ctrl;
 
   if (class_register (&pwm_class)) {
     class_unregister (&pwm_class);
@@ -198,19 +206,13 @@ __u32 data;
   // Set up PA5 for PWM0 (UART0 RX by default - remap in FEX)
   // Set up PA6 for PWM1
   pa_cfg0_reg = ioremap (PA_CFG0_REG, 4);
-  data = ioread32 (pa_cfg0_reg);
+  pin_ctrl = ioread32 (pa_cfg0_reg);
       
-  // "011" in H3, "010" in A33 - try each one
-  // PA05
-  data |= (1<<20);     
-  data |= (1<<21);
-  data &= ~(1<<22);
-  // PA06
-  data |= (1<<24);     
-  data |= (1<<25);
-  data &= ~(1<<26);
+  // PWM is "011" in H3, "010" in A33 - try each one
+  pin_ctrl.PA5_SELECT = 0x011;
+  pin_ctrl.PA6_SELECT = 0x011;
 
-  iowrite32 (data, pa_cfg0_reg);
+  iowrite32 (pin_ctrl, pa_cfg0_reg);
 
   printk(KERN_INFO "[%s] initialized ok\n", pwm_class.name);
   return 0;
