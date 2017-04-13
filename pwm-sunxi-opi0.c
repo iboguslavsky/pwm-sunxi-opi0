@@ -13,7 +13,7 @@ MODULE_AUTHOR("Igor Boguslavsky");
 MODULE_DESCRIPTION("PWM driver for the Orage Pi Zero"); 
 MODULE_VERSION("2.0");           
  
-#define PA_CFG0_REG	  	0x01c20800 		// PORT B control register 
+#define PA_CFG0_REG	  	0x01c20800 		// PORT A pin control register 
 #define PWM_CTRL_REG	  	0x01c21400 		// PWM control register
 #define PWM_CH0_PERIOD  	PWM_CTRL_REG+0x04	// pwm0 period register
 #define PWM_CH1_PERIOD  	PWM_CTRL_REG+0x08	// pwm1 period register
@@ -112,12 +112,13 @@ struct pwm_channel {
 };
 
 // no pulse mode for now; just cycle mode
-static DEVICE_ATTR(run, 0644, pwm_run_show, pwm_run_store);
-static DEVICE_ATTR(polarity, 0644, pwm_polarity_show, pwm_polarity_store);
-static DEVICE_ATTR(prescale, 0644, pwm_prescale_show, pwm_prescale_store);
-static DEVICE_ATTR(entirecycles, 0644, pwm_entirecycles_show, pwm_entirecycles_store);
-static DEVICE_ATTR(activecycles, 0644, pwm_activecycles_show, pwm_activecycles_store);
-static DEVICE_ATTR(freqperiod, 0644, pwm_freqperiod_show, pwm_freqperiod_store);
+static DEVICE_ATTR(run, 066, pwm_run_show, pwm_run_store);
+static DEVICE_ATTR(polarity, 0666, pwm_polarity_show, pwm_polarity_store);
+static DEVICE_ATTR(prescale, 0666, pwm_prescale_show, pwm_prescale_store);
+static DEVICE_ATTR(entirecycles, 0666, pwm_entirecycles_show, pwm_entirecycles_store);
+static DEVICE_ATTR(activecycles, 0666, pwm_activecycles_show, pwm_activecycles_store);
+static DEVICE_ATTR(freqperiod, 0666, pwm_freqperiod_show, pwm_freqperiod_store);
+static DEVICE_ATTR(hwardware, 0444, pwm_hardware_show, NULL);
 
 static const struct attribute *pwm_attrs[] = {
   &dev_attr_run.attr,
@@ -153,6 +154,7 @@ static ssize_t pwm_prescale_show (struct device *dev,struct device_attribute *at
 static ssize_t pwm_entirecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
 static ssize_t pwm_activecycles_show (struct device *dev,struct device_attribute *attr, char *buf);
 static ssize_t pwm_freqperiod_show (struct device *dev,struct device_attribute *attr, char *buf);
+static ssize_t pwm_hardware_show (struct device *dev,struct device_attribute *attr, char *buf);
 
 static ssize_t pwm_run_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
 static ssize_t pwm_polarity_store (struct device *dev,struct device_attribute *attr, const char *buf, size_t size);
@@ -181,15 +183,15 @@ struct portA_ctrl pin_ctrl;
   pwm1_kobj = &pwm1 -> kobj;
 	
   if (sysfs_create_group (pwm0_kobj, &pwm_attr_group)) {
-    device_destroy (&pwm_class, pwm0->devt);
-    device_destroy (&pwm_class, pwm1->devt);
+    device_destroy (&pwm_class, pwm0 -> devt);
+    device_destroy (&pwm_class, pwm1 -> devt);
     class_unregister (&pwm_class);
     return -ENODEV;
   }
 	
   if (sysfs_create_group (pwm1_kobj, &pwm_attr_group)) {
-    device_destroy (&pwm_class, pwm0->devt);
-    device_destroy (&pwm_class, pwm1->devt);
+    device_destroy (&pwm_class, pwm0 -> devt);
+    device_destroy (&pwm_class, pwm1 -> devt);
     class_unregister (&pwm_class);
     return -ENODEV;
   }
@@ -213,12 +215,13 @@ struct portA_ctrl pin_ctrl;
   pin_ctrl.PA6_SELECT = 0x011;
 
   iowrite32 (pin_ctrl, pa_cfg0_reg);
+  iounmap (pa_cfg0_reg);
 
   printk(KERN_INFO "[%s] initialized ok\n", pwm_class.name);
   return 0;
 }
  
-static void __exit opi0_exit(void){
+static void __exit opi0_exit (void) {
 
   // Stop PWMs
   channel[0].enable = 0;
@@ -296,6 +299,59 @@ unsigned int clk_freq, pwm_freq;
 
   status = sprintf (buf, "%uhz\n", pwm_freq);
 
+  return status;
+}
+
+static ssize_t pwm_hardware_show (struct device *dev, struct device_attribute *attr, char *buf) {
+ssize_t status;
+void __iomem *pa_cfg0_reg;					// Port A config register
+struct portA_ctrl pin_ctrl;
+union h2plus_pwm_ctrl_u pwm_ctrl;   				// PWM control register
+union h2plus_pwm_period_u pwm0_period_reg, pwm1_period_reg; 	// Period registers
+	
+  // PA register pin states
+  pa_cfg0_reg = ioremap (PA_CFG0_REG, 4);
+  pin_ctrl = ioread32 (pa_cfg0_reg);
+  iounmap (pa_cfg0_reg);
+	
+  // PWM control and periods registers
+  pwm_ctrl.initializer = ioread32 (ctrl_reg_addr);
+  pwm0_period_reg.initializer = ioread32 (channel[0].period_reg_addr);
+  pwm1_period_reg.initializer = ioread32 (channel[1].period_reg_addr);
+	
+  status = sprintf (buf, "PA05: 0x%03x, PA06: 0x%03x\n \
+  PWM Control:0x%08x\n \
+    PWM0 Channel Prescaler: 0x%04x\n \
+    PWM0 Channel Enable: %d\n \
+    PWM0 Channel Polarity: %d\n \
+    PWM0 Channel Gating: %d\n \
+    PWM0 Channel Mode: %d\n \
+    PWM0 Channel Clock Bypass: %d\n \
+    PWM1 Channel Prescaler: 0x%04x\n \
+    PWM1 Channel Enable: %d\n \
+    PWM1 Channel Polarity: %d\n \
+    PWM1 Channel Gating: %d\n \
+    PWM1 Channel Mode: %d\n \
+    PWM1 Channel Clock Bypass: %d\n \
+  PWM0 Entire Cycles: 0x%04x, PWM0 Active Cycles: 0x%04x\n \
+  PWM1 Entire Cycles: 0x%04x, PWM1 Active Cycles: 0x%04x\n",
+    pin_ctrl.PA5_SELECT, pin_ctrl.PA6_SELECT,
+    pwm_ctrl.initializer,
+    pwm_ctrl.s.pwm_ch0_prescal,
+    pwm_ctrl.s.pwm_ch0_en,
+    pwm_ctrl.s.pwm_ch0_act_sta,
+    pwm_ctrl.s.sclk_ch0_gating,
+    pwm_ctrl.s.pwm_ch0_mode,
+    pwm_ctrl.s.pwm0_bypass,
+    pwm_ctrl.s.pwm_ch1_prescal,
+    pwm_ctrl.s.pwm_ch1_en,
+    pwm_ctrl.s.pwm_ch1_act_sta,
+    pwm_ctrl.s.sclk_ch1_gating,
+    pwm_ctrl.s.pwm_ch1_mode,
+    pwm_ctrl.s.pwm1_bypass,		    
+    pwm0_period_reg.s.entire_cycles, pwm0_period_reg.s.active_cycles, 
+    pwm1_period_reg.s.entire_cycles, pwm1_period_reg.s.active_cycles);
+	
   return status;
 }
 
