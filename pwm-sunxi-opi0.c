@@ -14,6 +14,7 @@ MODULE_DESCRIPTION("PWM driver for the Orage Pi Zero");
 MODULE_VERSION("2.0");           
  
 #define PA_CFG0_REG	  	0x01c20800 		// PORT A pin control register 
+#define PA_PULL0_REG	  	PA_CFG0_REG+0x01c	// PORT A pullup control register 
 #define PWM_CTRL_REG	  	0x01c21400 		// PWM control register
 #define PWM_CH0_PERIOD  	PWM_CTRL_REG+0x04	// pwm0 period register
 #define PWM_CH1_PERIOD  	PWM_CTRL_REG+0x08	// pwm1 period register
@@ -42,12 +43,12 @@ union portA_ctrl_u {
 };
 
 enum h2plus_pwm_prescale {
-  PRESCALE_DIV120  = 0x00,  /* Divide 24mhz clock by 120 */
+  PRESCALE_DIV120  = 0x00,  // Divide 24mhz clock by 120
   PRESCALE_DIV180  = 0x01,
   PRESCALE_DIV240  = 0x02,
   PRESCALE_DIV360  = 0x03,
   PRESCALE_DIV480  = 0x04,
-  PRESCALE_INVx05  = 0x05, // Invalid prescaler setting
+  PRESCALE_INVx05  = 0x05,  // Invalid prescaler setting
   PRESCALE_INVx06  = 0x06,
   PRESCALE_INVx07  = 0x07,
   PRESCALE_DIV12k  = 0x08,
@@ -173,8 +174,9 @@ ssize_t pwm_enable (unsigned int enable, struct pwm_channel *chan);
 int update_ctrl_reg (void);
 
 static int __init opi0_init (void) {
-void __iomem *pa_cfg0_reg;	// Port A config register
+void __iomem *pa_cfg0_reg, *pa_pull0_reg;	// Port A pin config i& pull-up registers
 union portA_ctrl_u pin_ctrl;
+__u32 pin_pullup;
 
   if (class_register (&pwm_class)) {
     class_unregister (&pwm_class);
@@ -206,7 +208,7 @@ union portA_ctrl_u pin_ctrl;
   channel[1].channel = 1;
       
   // Map important registers into kernel address space
-  ctrl_reg_addr = ioremap (PWM_CTRL_REG ,4);
+  ctrl_reg_addr = ioremap (PWM_CTRL_REG, 4);
   channel[0].period_reg_addr = ioremap (PWM_CH0_PERIOD, 4);
   channel[1].period_reg_addr = ioremap (PWM_CH1_PERIOD, 4);
 
@@ -217,11 +219,24 @@ union portA_ctrl_u pin_ctrl;
       
   // PWM is "011" in H3, "010" in A33 - try each one
   pin_ctrl.s.PA5_SELECT = 0b011;
-  pin_ctrl.s.PA6_SELECT = 0b010;
+  pin_ctrl.s.PA6_SELECT = 0b011;
 
   iowrite32 (pin_ctrl.initializer, pa_cfg0_reg);
   iounmap (pa_cfg0_reg);
 
+  // Enable pull-ups
+  pa_pull0_reg = ioremap (PA_PULL0_REG, 4);
+  pin_pullup = ioread32 (pa_pull0_reg);
+      
+  // "01" -> enable pull-up
+  pin_pullup |=  (1 << 10);
+  pin_pullup &= ~(1 << 11);
+  pin_pullup |=  (1 << 12);
+  pin_pullup &= ~(1 << 13);
+
+  iowrite32 (pin_pullup, pa_pull0_reg);
+  iounmap (pa_pull0_reg);
+  
   printk(KERN_INFO "[%s] initialized ok\n", pwm_class.name);
   return 0;
 }
@@ -385,8 +400,6 @@ static ssize_t pwm_run_store (struct device *dev, struct device_attribute *attr,
 
 	// Good status to return (the input is the string size of *buf in bytes)
         status = size;
-
-        // printk (KERN_INFO "[%s] control reg: 0x%08x (cached: 0x%08x), period reg: 0x%08x\n", pwm_class.name, ioread32(channel -> ctrl_addr), channel -> ctrl.initializer, ioread32(channel -> period_reg_addr));
     }
   }
 
@@ -547,7 +560,7 @@ union h2plus_pwm_ctrl_u ctrl;
   ctrl.s.pwm_ch1_pul_start = channel[1].pulse_start;
   ctrl.s.pwm1_bypass       = channel[1].bypass;
 
-  iowrite32 (ctrl.initializer, ctrl_reg_addr); // both channel[0] and [1] refer to the same ctrl reg
+  iowrite32 (ctrl.initializer, ctrl_reg_addr);
   return 0;
 }
 
