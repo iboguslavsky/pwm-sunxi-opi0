@@ -61,7 +61,7 @@ Once loaded, the following sysfs directory structure will be created:
 **Positive Polarity PWM cadence diagram**
 ![PWM Cadence](https://github.com/iboguslavsky/pwm-sunxi-opi0/blob/master/images/pwm.png "PWM Cadence Diagram")
 
-  * **run** (read / write)
+  * **run** (read / write) - **NOTE: This needs to be run  first before any other values are set**
   
     Enable / disable PWM0
     
