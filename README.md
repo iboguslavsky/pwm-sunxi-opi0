@@ -2,7 +2,7 @@
 
 Loadable Kernel Module to support PWM on Allwinner H3 / H2+ SoC (sun8i / sun8iw7p1). Works with Orange Pi Zero.
 
-**Tested under Legacy Kernel only (3.4.X)**
+**Tested on Kernel (4.14.X)**
 
 Provides access to PWM configuration parameters from userspace. Only exposes PWM0 (PWM1 will be added once H2+ SoC documentation is available). PWM0 output is on PA05, which is exposed as UART0_RX (middle pin on the UART header). 
 
@@ -124,4 +124,23 @@ Once loaded, the following sysfs directory structure will be created:
     
     Show a calculated frequency of the PWM cycle (accounting for PWM clock divider and specified PWM period)
     
-      
+
+---
+**Sample of frequency values**
+
+|prescale (in decimal) | entire_cycles | Result in Hz (Prefix Hz) | active_cycles (Duty%)|
+|-------|-------|----------------------|--------|
+|15     | 1     | 12000000 Hz (12 MHz) | 1 (50%)|
+|15     | 10    | 2400000 Hz (2.4 MHz) | 5 (50%)|
+|15     | 100   | 240000 Hz (240 kHz)  | 50 (50%)|
+|15     | 1000  | 24000 Hz (24 kHz)    | 500 (50%)|
+|15     | 10000 | 2400 Hz (2.4 kHz)    | 5000 (50%)|
+|0      | 1     | 100000 Hz (100 kHz)  | 1 (50%)|
+|0      | 10    | 20000 Hz (20 kHz)    | 5 (50%)|
+|0      | 100   | 2000 Hz (2 kHz)      | 50 (50%)|
+|0      | 1000  | 200 Hz (0.2 kHz)     | 500 (50%)|
+|0      | 10000 | 20 Hz (0.02 kHz)     | 5000 (50%)|
+
+As you can see the **active_cycles** is always lower or equal to **entire_cycles**, and depends on the necessary duty/frequency you need is necessary to recalculate the **prescale**.
+
+And be aware that the final result of the frequency may vary do to how things may get rounded.
